@@ -29,7 +29,7 @@ object GameController extends RouterDerivationModule {
         def play(userMove: Move): Future[Either[Throwable, Unit]]
 
         @query
-        def result: Future[Either[Throwable, ResultResponse]]
+        def result(): Future[Either[Throwable, ResultResponse]]
     }
 
     class GameApiImpl(implicit ec: ExecutionContext) extends GameApi {
