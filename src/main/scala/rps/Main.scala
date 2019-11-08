@@ -11,20 +11,16 @@ import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
 import io.circe.generic.auto._
 import io.buildo.enumero.circe._
 
-import rps.model.PlayResponse
-
 object Main extends App with RouterDerivationModule {
   implicit val system = ActorSystem("rps")
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  implicit def throwableResponse: ToHttpResponse[Throwable] = null
-
-  val usersRouter = deriveRouter[GameApi](new GameApiImpl)
+  val router = GameController.router
 
   val rpcServer = new HttpRPCServer(
     config = Config("localhost", 8080),
-    routers = List(usersRouter)
+    routers = List(router)
   )
 
 }
