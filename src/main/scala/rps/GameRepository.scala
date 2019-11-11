@@ -35,7 +35,7 @@ class InMemoryGameRepository extends GameRepository {
       (id, userMove.toString(), computerMove.toString(), result.toString()),
     )
     val future = db.run(action)
-    Await.result(future, Duration.Inf) // assume this always succeed
+    Await.result(future, Duration.Inf) // assume this always succeeds
     UserId(id)
   }
 
