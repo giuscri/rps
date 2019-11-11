@@ -6,20 +6,20 @@ import model._
 
 trait GameRepository {
   def save(play: Play): Int
-  def read(k: Int): Option[Play]
+  def read(userId: Int): Option[Play]
 }
 
 class InMemoryGameRepository extends GameRepository {
   private val map = TrieMap.empty[Int, Play]
-  private var k = 0
+  private var nextUserId = 0
 
   override def save(play: Play): Int = {
-    map.put(k, play)
-    k = k + 1
-    k - 1 // returns the previous value of k
+    map.put(nextUserId, play)
+    nextUserId = nextUserId + 1
+    nextUserId - 1 // returns the key for the just stored value
   }
 
-  override def read(k: Int): Option[Play] =
-    map.get(k)
+  override def read(userId: Int): Option[Play] =
+    map.get(userId)
 
 }

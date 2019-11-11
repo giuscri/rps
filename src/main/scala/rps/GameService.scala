@@ -25,6 +25,6 @@ class GameServiceImpl(repository: GameRepository) extends GameService {
   private def generateComputerMove(): Move =
     Random.shuffle(List(Rock, Paper, Scissors)).head
 
-  override def getResult(k: Int): Option[Play] =
-    repository.read(k)
+  override def getResult(userId: Int): Option[Play] =
+    repository.read(userId)
 }
