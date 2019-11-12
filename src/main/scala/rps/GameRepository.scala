@@ -6,7 +6,7 @@ import model._
 import java.util.concurrent.atomic.AtomicInteger
 import slick.driver.H2Driver.api._
 import slick.lifted.ProvenShape
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import io.buildo.enumero.CaseEnumSerialization
 
@@ -22,7 +22,7 @@ class InMemoryGameRepository extends GameRepository {
   val plays = TableQuery[Plays]
   val setupAction = plays.schema.create
   val setupFuture = db.run(setupAction)
-  Await.result(setupFuture, Duration.Inf)
+  Await.result(setupFuture, Duration(500, MILLISECONDS))
 
   override def save(play: Play): UserId = {
     val userMove = play.userMove
