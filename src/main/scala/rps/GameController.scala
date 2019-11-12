@@ -18,15 +18,12 @@ trait GameController {
 class GameControllerImpl(gameService: GameService)(implicit ec: ExecutionContext)
     extends GameController {
   override def play(userMove: Move): Future[Either[Throwable, UserId]] =
-    Future {
-      Right(gameService.playMove(userMove))
-    }
+    gameService.playMove(userMove).map(userId => Right(userId))
 
   override def result(id: Int): Future[Either[Throwable, PlayResponse]] =
-    Future {
-      gameService.getResult(UserId(id)).map { play =>
-        PlayResponse(play.userMove, play.computerMove, play.result)
-      }.toRight(new IllegalStateException)
-    }
+    gameService.getResult(UserId(id)).map(optionPlay => optionPlay match {
+      case None => Left(new IllegalStateException)
+      case Some(play) => Right(PlayResponse(play.userMove, play.computerMove, play.result))
+    })
 
 }

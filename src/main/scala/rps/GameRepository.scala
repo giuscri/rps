@@ -9,13 +9,15 @@ import slick.lifted.ProvenShape
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import io.buildo.enumero.CaseEnumSerialization
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 trait GameRepository {
-  def save(play: Play): UserId
-  def read(userId: UserId): Option[Play]
+  def save(play: Play): Future[UserId]
+  def read(userId: UserId): Future[Option[Play]]
 }
 
-class InMemoryGameRepository extends GameRepository {
+class InMemoryGameRepository(implicit ec: ExecutionContext) extends GameRepository {
   private val map = TrieMap.empty[UserId, Play]
   private val db = Database.forConfig("h2mem1") // TODO: we should db.close this!
 
@@ -24,7 +26,7 @@ class InMemoryGameRepository extends GameRepository {
   val setupFuture = db.run(setupAction)
   Await.result(setupFuture, Duration(500, MILLISECONDS))
 
-  override def save(play: Play): UserId = {
+  override def save(play: Play): Future[UserId] = {
     val userMove = play.userMove
     val computerMove = play.computerMove
     val result = play.result
@@ -32,11 +34,10 @@ class InMemoryGameRepository extends GameRepository {
     val action = (plays returning plays.map(_.id)) +=
       Play(userMove, computerMove, result, None) // https://stackoverflow.com/a/55269918/2219670
     val future = db.run(action)
-    val id = Await.result(future, Duration.Inf) // assume this always succeeds
-    UserId(id)
+    future.map(id => UserId(id)) // assume this always succeeds
   }
 
-  override def read(userId: UserId): Option[Play] = {
+  override def read(userId: UserId): Future[Option[Play]] = {
     val plays = TableQuery[Plays]
     val action = plays.filter(_.id === userId.id).result
     val future = db.run(action)
@@ -44,10 +45,10 @@ class InMemoryGameRepository extends GameRepository {
     val moveFromString = implicitly[CaseEnumSerialization[Move]].caseFromString _
     val resultFromString = implicitly[CaseEnumSerialization[Result]].caseFromString _
 
-    Await.result(future, Duration.Inf).toList match { // why a Vector is returned instead of a Seq?
+    future.map(vector => vector.toList match { // why a Vector is returned instead of a Seq?
       case Nil => None
       case play :: _ => Some(play) // assume only 1 row is returned
-    }
+    })
   }
 
 }
