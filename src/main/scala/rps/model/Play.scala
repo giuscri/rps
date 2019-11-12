@@ -1,3 +1,3 @@
 package rps.model
 
-case class Play(userMove: Move, computerMove: Move, result: Result)
+case class Play(userMove: Move, computerMove: Move, result: Result, id: Option[Int] = None)

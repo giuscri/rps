@@ -19,8 +19,8 @@ class InMemoryGameRepository extends GameRepository {
   private val map = TrieMap.empty[UserId, Play]
   private val db = Database.forConfig("h2mem1") // TODO: we should db.close this!
 
-  val storedPlays = TableQuery[StoredPlays]
-  val setupAction = storedPlays.schema.create
+  val plays = TableQuery[Plays]
+  val setupAction = plays.schema.create
   val setupFuture = db.run(setupAction)
   Await.result(setupFuture, Duration.Inf)
 
@@ -28,17 +28,17 @@ class InMemoryGameRepository extends GameRepository {
     val userMove = play.userMove
     val computerMove = play.computerMove
     val result = play.result
-    val storedPlays = TableQuery[StoredPlays]
-    val action = (storedPlays returning storedPlays.map(_.id)) +=
-      StoredPlay(Play(userMove, computerMove, result)) // https://stackoverflow.com/a/55269918/2219670
+    val plays = TableQuery[Plays]
+    val action = (plays returning plays.map(_.id)) +=
+      Play(userMove, computerMove, result, None) // https://stackoverflow.com/a/55269918/2219670
     val future = db.run(action)
     val id = Await.result(future, Duration.Inf) // assume this always succeeds
     UserId(id)
   }
 
   override def read(userId: UserId): Option[Play] = {
-    val storedPlays = TableQuery[StoredPlays]
-    val action = storedPlays.filter(_.id === userId.id).result
+    val plays = TableQuery[Plays]
+    val action = plays.filter(_.id === userId.id).result
     val future = db.run(action)
 
     val moveFromString = implicitly[CaseEnumSerialization[Move]].caseFromString _
@@ -46,33 +46,30 @@ class InMemoryGameRepository extends GameRepository {
 
     Await.result(future, Duration.Inf).toList match { // why a Vector is returned instead of a Seq?
       case Nil => None
-      case StoredPlay(play, _) :: _ => Some(play) // assume only 1 row is returned
+      case play :: _ => Some(play) // assume only 1 row is returned
     }
   }
 
 }
 
-case class StoredPlay(play: Play, id: Option[Int] = None)
-
-class StoredPlays(tag: Tag) extends Table[StoredPlay](tag, "STOREDPLAYS") {
-  def userMove = column[String]("STO_USERMOVE")
-  def computerMove = column[String]("STO_COMPUTERMOVE")
-  def result = column[String]("STO_RESULT")
-
-  def id = column[Int]("STO_ID", O.PrimaryKey, O.AutoInc)
+class Plays(tag: Tag) extends Table[Play](tag, "PLAYS") {
+  def userMove = column[String]("PLA_USERMOVE")
+  def computerMove = column[String]("PLA_COMPUTERMOVE")
+  def result = column[String]("PLA_RESULT")
+  def id = column[Int]("PLA_ID", O.PrimaryKey, O.AutoInc)
 
   def sMove(m: String) = implicitly[CaseEnumSerialization[Move]].caseFromString(m).get
   def sResult(r: String) = implicitly[CaseEnumSerialization[Result]].caseFromString(r).get
 
-  def * = (id.?, (userMove, computerMove, result)).shaped <> (
+  def * = (userMove, computerMove, result, id.?).shaped <> (
     {
-      case (id, (um, cm, r)) => {
-        StoredPlay(Play.tupled.apply(sMove(um), sMove(cm), sResult(r)), id)
+      case (um, cm, r, id) => {
+        Play(sMove(um), sMove(cm), sResult(r), id)
       }
     },
     {
-      storedPlay: StoredPlay => {
-        Some((None, (storedPlay.play.userMove.toString, storedPlay.play.computerMove.toString, storedPlay.play.result.toString)))
+      play: Play => {
+        Some((play.userMove.toString, play.computerMove.toString, play.result.toString, None))
       }
     }
   )
