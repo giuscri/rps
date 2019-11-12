@@ -58,19 +58,21 @@ class Plays(tag: Tag) extends Table[Play](tag, "PLAYS") {
   def result = column[String]("PLA_RESULT")
   def id = column[Int]("PLA_ID", O.PrimaryKey, O.AutoInc)
 
-  def sMove(m: String) = implicitly[CaseEnumSerialization[Move]].caseFromString(m).get
-  def sResult(r: String) = implicitly[CaseEnumSerialization[Result]].caseFromString(r).get
+  def moveFromString(m: String) = implicitly[CaseEnumSerialization[Move]].caseFromString(m).get
+  def resultFromString(r: String) = implicitly[CaseEnumSerialization[Result]].caseFromString(r).get
 
   def * = (userMove, computerMove, result, id.?).shaped <> (
     {
-      case (um, cm, r, id) => {
-        Play(sMove(um), sMove(cm), sResult(r), id)
-      }
+      case (userMove, computerMove, result, id) => Play(
+        moveFromString(userMove),
+        moveFromString(computerMove),
+        resultFromString(result),
+        id,
+      )
     },
     {
-      play: Play => {
+      play: Play =>
         Some((play.userMove.toString, play.computerMove.toString, play.result.toString, None))
-      }
     }
   )
 }
