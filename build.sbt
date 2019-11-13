@@ -2,7 +2,7 @@ lazy val root = project
   .in(file("."))
   .settings(
     name := "rock-paper-scissor",
-    scalaVersion := "2.12.6",
+    scalaVersion := "2.12.10",
     resolvers += Resolver.bintrayRepo("buildo", "maven"),
     libraryDependencies ++= Seq(
       "io.buildo" %% "enumero" % "1.3.0",
